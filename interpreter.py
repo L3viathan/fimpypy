@@ -5,8 +5,8 @@ import re
 
 
 #Tokenizer "enum"
-ROOT='ROOT'
-UNPARSED='UNPARSED'
+ROOT='ROOT' #used during some parsing experimentation
+UNPARSED='UNPARSED' #default tag for unparsed text
 COMMENT='COMMENT'
 ENDLINE='ENDLINE'
 ID='ID'
@@ -109,17 +109,19 @@ Your faithful student, Twilight Sparkle.'''
 
 class FimCode:
 	def __init__(self,inputtext):
-		'''Code Object that holds the neccessary methods to tokenize, parse and interpret FiM++ code.'''
-		self.tokens=[]
-		self.raw=inputtext
+		'''Code Object that holds the neccessary methods to tokenize, parse and execute FiM++ code.'''
+		self.tokens=[] #List of tuples (type,text)
+		self.raw=inputtext #never to be changed
 	def tokenize_remove_empty(self):
+		'''Remove tuples from the token list self.tokens that have an empty text span.'''
 		self.tokens = [(a,b) for (a,b) in self.tokens if b != ""]
 	def tokenize(self):
+		'''Split text into tokens. Accounts for strings and comments that should not be split.'''
 		i=0
 		while True:
-			if i>=len(self.tokens): #can't use for loop because iterable is changed during loop
+			if i>=len(self.tokens): #can't use a for loop because the iterable is changed during loop
 				break
-			if self.tokens[i][0] == COMMENT or self.tokens[i][0] == STRING:
+			if self.tokens[i][0] == COMMENT or self.tokens[i][0] == STRING: #Strings and comments should not be split
 				i+=1
 				continue
 			old = self.tokens[i][1][:]
@@ -127,11 +129,11 @@ class FimCode:
 			new = []
 			for element in splitted:
 				new += [(UNPARSED,element)]
-			#new = new[1:]
 			self.tokens = self.tokens[:i] + new + self.tokens[i+1:]
 			i += 1
 			self.tokenize_remove_empty()
 	def lexer_tag(self,what,how):
+		'''Tag all instances of 'what' with the tag 'how'.'''
 		i=0
 		while True:
 			if i>=len(self.tokens): #can't use for loop because iterable is changed during loop
@@ -149,6 +151,7 @@ class FimCode:
 			i += 1
 			self.tokenize_remove_empty()
 	def lexer_nums(self):
+		'''Tag numbers with the tag NUM'''
 		for i in range(0,len(self.tokens)):
 			if self.tokens[i][0] == UNPARSED:
 				try:
@@ -156,6 +159,7 @@ class FimCode:
 				except:
 					continue
 	def lexer_unify(self,listofthings,new):
+		'''Transform all instances of the sequence defined in 'listofthings' to an unified tag 'new'.'''
 		i=0
 		while True:
 			if i>=len(self.tokens): #can't use for loop because iterable is changed during loop
@@ -174,6 +178,7 @@ class FimCode:
 				self.tokens = self.tokens[:i] + [(new,"".join([a[1] for a in self.tokens[i:j+1]]))] + self.tokens[j+1:]
 			i += 1
 	def lexer_IDify(self):
+		'''Change everything that is still untagged to an ID. Also collect IDs with spaces between them'''
 		i=0
 		while True:
 			if i>=len(self.tokens): #can't use for loop because iterable is changed during loop
@@ -191,6 +196,7 @@ class FimCode:
 				self.tokens = self.tokens[:i] + [(ID,"".join([a[1] for a in self.tokens[i:j]]))] + self.tokens[j:]
 			i += 1
 	def run(self):
+		'''Main routine of fimpypy'''
 		#Find strings and comments first
 		pointer=0
 		unparsed=self.raw
